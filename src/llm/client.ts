@@ -40,6 +40,8 @@ export interface CompletionRequest<T> {
   maxOutputTokens: number;
   schema: SchemaPair<T>;
   temperature?: number;
+  /** Opt into DeepSeek thinking; other calls retain non-thinking mode. */
+  deepseekThinking?: 'high' | 'max';
   signal?: AbortSignal;
 }
 
@@ -74,6 +76,7 @@ export class LlmClient {
     private readonly logger: Logger,
   ) {
     this.semaphore = new Semaphore(config.llm.concurrency);
+    this.structuredOutputSupported = config.llm.provider !== 'deepseek';
   }
 
   getUsage(): Readonly<LlmUsage> {
@@ -81,7 +84,9 @@ export class LlmClient {
   }
 
   async complete<T>(request: CompletionRequest<T>): Promise<T> {
-    const cacheKey = sha256(request.model, request.system, request.user, request.schema.name);
+    const cacheKey = sha256(request.model, request.system, request.user, request.schema.name,
+      JSON.stringify(request.schema.jsonSchema),
+      JSON.stringify({ maxOutputTokens: request.maxOutputTokens, temperature: request.temperature, deepseekThinking: request.deepseekThinking }));
 
     const cached = this.cache.get(cacheKey);
     if (cached !== undefined) {
@@ -115,10 +120,16 @@ export class LlmClient {
     const body: Record<string, unknown> = {
       model: request.model,
       messages: [
-        { role: 'system', content: request.system },
+        {
+          role: 'system',
+          content: this.structuredOutputSupported
+            ? request.system
+            : `${request.system}\nReturn only a JSON object matching this schema:\n${JSON.stringify(request.schema.jsonSchema)}`,
+        },
         { role: 'user', content: request.user },
       ],
-      max_completion_tokens: request.maxOutputTokens,
+      [this.config.llm.provider === 'deepseek' ? 'max_tokens' : 'max_completion_tokens']:
+        request.maxOutputTokens,
       response_format: this.structuredOutputSupported
         ? {
             type: 'json_schema',
@@ -131,7 +142,12 @@ export class LlmClient {
         : { type: 'json_object' },
     };
 
-    if (request.temperature !== undefined) body.temperature = request.temperature;
+    const thinking = this.config.llm.provider === 'deepseek' && request.deepseekThinking !== undefined;
+    if (this.config.llm.provider === 'deepseek') {
+      body.thinking = { type: thinking ? 'enabled' : 'disabled' };
+      if (thinking) body.reasoning_effort = request.deepseekThinking;
+    }
+    if (request.temperature !== undefined && !thinking) body.temperature = request.temperature;
 
     let raw: unknown;
     try {

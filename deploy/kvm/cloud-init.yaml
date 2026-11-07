@@ -1,0 +1,47 @@
+#cloud-config
+hostname: trendalyse
+manage_etc_hosts: true
+users:
+  - name: issacnitin
+    groups: [sudo]
+    shell: /bin/bash
+    sudo: "ALL=(ALL) NOPASSWD:ALL"
+    lock_passwd: true
+    ssh_authorized_keys:
+      - PUBLIC_SSH_KEY
+ssh_pwauth: false
+disable_root: true
+apt:
+  preserve_sources_list: true
+write_files:
+  - path: /etc/sysctl.d/90-trendalyse.conf
+    content: |
+      net.ipv6.conf.all.disable_ipv6=1
+      net.ipv6.conf.default.disable_ipv6=1
+  - path: /etc/apt/sources.list.d/ubuntu.sources
+    content: |
+      Types: deb
+      URIs: https://archive.ubuntu.com/ubuntu
+      Suites: noble noble-updates noble-backports
+      Components: main restricted universe multiverse
+      Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+
+      Types: deb
+      URIs: https://security.ubuntu.com/ubuntu
+      Suites: noble-security
+      Components: main restricted universe multiverse
+      Signed-By: /usr/share/keyrings/ubuntu-archive-keyring.gpg
+  - path: /usr/local/sbin/trendalyse-setup
+    permissions: "0700"
+    content: |
+      #!/bin/bash
+      set -euo pipefail
+      sysctl --system
+      apt-get update
+      apt-get install -y docker.io docker-compose-v2 qemu-guest-agent
+      systemctl enable --now docker qemu-guest-agent
+      mkdir -p /opt/trendalyse
+      chown issacnitin:issacnitin /opt/trendalyse
+      touch /var/lib/cloud/trendalyse-ready
+runcmd:
+  - [/usr/local/sbin/trendalyse-setup]

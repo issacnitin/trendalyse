@@ -49,4 +49,9 @@ export default tseslint.config(
       '@typescript-eslint/no-unsafe-call': 'off',
     },
   },
+  {
+    files: ['src/web/public/**/*.ts'],
+    languageOptions: { globals: globals.browser },
+    rules: { 'no-restricted-globals': 'off' },
+  },
 );

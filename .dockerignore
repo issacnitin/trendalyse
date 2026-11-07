@@ -1,0 +1,17 @@
+.git
+.github
+node_modules
+dist
+coverage
+.env
+.env.*
+*.key
+*.pem
+*.log
+*.gif
+*.mp4
+tests
+deploy/secrets
+insights.json*
+data
+*.sqlite*

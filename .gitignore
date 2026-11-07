@@ -8,6 +8,12 @@ coverage/
 !.env.example
 *.pem
 *.key
+deploy/secrets/
+deploy/kvm/staging/
+data/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
 
 # Generated output
 insights.json
