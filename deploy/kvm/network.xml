@@ -1,0 +1,7 @@
+<network>
+  <name>trendalyse</name>
+  <forward mode="nat"/>
+  <bridge name="virbr-trends" stp="on" delay="0"/>
+  <dns enable="no"/>
+  <ip address="172.29.245.1" netmask="255.255.255.0"/>
+</network>

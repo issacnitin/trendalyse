@@ -1,0 +1,5 @@
+.research-article{max-width:850px;padding-top:60px}
+.research-article h1{font-size:clamp(32px,5vw,48px);letter-spacing:-1.5px}
+.research-article h2{font-size:25px;line-height:1.4;margin:38px 0 18px}
+.research-article h3{font-size:17px;line-height:1.5;margin:26px 0 12px}
+.research-article p:not(.eyebrow){font-size:15px;line-height:1.85;color:var(--muted)}

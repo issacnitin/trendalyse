@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Dashboard | Trendalyse</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body class="dashboard-page">
+  <aside class="dashboard-sidebar" aria-label="Workspace navigation">
+    <a class="brand" href="/" aria-label="Trendalyse home"><span class="brand-mark">t.</span>trendalyse<span class="brand-dot">.</span></a>
+    <p class="sidebar-label">YOUR WORKSPACE</p>
+    <nav class="dashboard-nav"><a href="/dashboard" aria-current="page">Overview</a><a href="#onboarding">Data connection</a><a id="research-nav" href="#explorer" hidden>Research</a></nav>
+    <div class="sidebar-bottom"><p id="setup-status" class="muted">Checking your connection</p><button id="logout-button" type="button" class="secondary">Sign out</button><p class="fine-print">Google Trends via SerpApi<br>Insights by DeepSeek Flash</p></div>
+  </aside>
+  <main class="dashboard-main">
+    <header class="dashboard-header"><p class="eyebrow">WORKSPACE / RESEARCH</p><span id="account-email" class="account-pill"></span></header>
+    <div class="dashboard-intro"><div><h1>Research workspace<span>.</span></h1><p class="muted">Find a search signal. Shape a hypothesis. Decide what to validate next.</p></div><span class="source-badge"><span class="status-dot"></span>Google Trends data</span></div>
+    <p id="dashboard-loading" role="status" aria-live="polite">Loading your workspace...</p>
+    <button id="retry-account" type="button" class="secondary" hidden>Retry loading workspace</button>
+    <noscript><p class="error">Enable JavaScript to load your dashboard and research tools.</p></noscript>
+    <div id="dashboard-content" hidden>
+    <section id="onboarding" class="workspace onboarding" aria-label="Data source onboarding">
+      <div class="section-top"><div><p class="eyebrow">YOUR DATA CONNECTION</p><h2 id="onboarding-title">Get your SerpApi key</h2></div><span class="step-label">YOUR KEY. YOUR QUOTA.</span></div>
+      <ol class="wizard-steps" aria-label="Setup progress"><li data-step="1">1. Get a key</li><li data-step="2">2. Connect</li><li data-step="3">3. Research</li></ol>
+      <div id="wizard-provider" hidden>
+        <p class="muted">Connect SerpApi for Google Trends data. Your searches use your own account and quota.</p>
+        <div class="provider-actions"><a class="button-link" href="https://serpapi.com/users/sign_up" target="_blank" rel="noopener noreferrer">Create a SerpApi account &nearr;</a><a class="button-link secondary" href="https://serpapi.com/manage-api-key" target="_blank" rel="noopener noreferrer">Open API key dashboard &nearr;</a></div>
+        <ol class="setup-instructions"><li>Create a SerpApi account or sign in.</li><li>Copy your private key from its API dashboard.</li><li>Return here with the key, not your SerpApi password.</li></ol>
+        <details class="setup-details"><summary>About your key and search quota</summary><p class="fine-print">SerpApi does not document an OAuth account-linking flow for this experience. You copy your key, and we verify it without using a search credit. <a href="https://serpapi.com/pricing" target="_blank" rel="noopener noreferrer">View current plans and quotas &nearr;</a></p></details>
+        <button id="provider-next" type="button">I have my API key &rarr;</button>
+      </div>
+      <div id="wizard-connect" hidden>
+        <h3>Connect SerpApi securely</h3>
+        <form id="key-form"><label for="serpapi-key">Your SerpApi API key</label><div class="key-input-row"><input id="serpapi-key" type="password" autocomplete="off" minlength="20" maxlength="256" placeholder="Paste your private API key" required><button id="paste-key" class="secondary" type="button">Paste from clipboard</button></div><div class="provider-actions"><button id="save-key" type="submit">Verify &amp; connect</button><button id="provider-back" type="button" class="secondary">Back to key instructions</button><a href="https://serpapi.com/manage-api-key" target="_blank" rel="noopener noreferrer">Open SerpApi dashboard &nearr;</a></div></form>
+        <p class="fine-print">We verify the key with SerpApi's free Account API; this does not use a search credit. It is encrypted on our server and never displayed back to the browser or stored in localStorage.</p>
+      </div>
+      <div id="wizard-ready" hidden>
+        <div class="connected-summary"><div><p id="connection-status" class="muted"></p><p id="provider-quota" class="muted"></p></div><button id="start-exploring" type="button" class="secondary">Try an idea research starter &rarr;</button></div>
+        <p id="ai-allowance" class="fine-print"></p>
+        <details id="connection-settings"><summary>Manage your connection</summary><div class="provider-actions"><button id="replace-key" type="button" class="secondary">Replace SerpApi key</button><button id="refresh-quota" type="button" class="secondary">Refresh SerpApi quota</button><button id="remove-key" type="button" class="secondary">Disconnect SerpApi</button></div></details>
+      </div>
+      <p id="account-status" role="status" aria-live="polite"></p>
+    </section>
+    <section id="explorer" class="workspace" aria-label="Trend explorer" hidden>
+      <div class="section-top"><h2>Explore a market</h2><span class="step-label">01 / DISCOVER</span></div>
+      <form id="search-form">
+        <label for="terms">Search terms <span class="muted">Compare up to 5, separated by commas</span></label>
+        <input id="terms" name="terms" placeholder="e.g. meal prep, healthy snacks" maxlength="504" required>
+        <div class="form-grid">
+          <div><label for="geo">Region</label><select id="geo"><option value="">Worldwide</option><option value="US">United States</option><option value="IN">India</option><option value="GB">United Kingdom</option><option value="CA">Canada</option><option value="AU">Australia</option><option value="DE">Germany</option><option value="FR">France</option><option value="SG">Singapore</option></select></div>
+          <div><label for="date">Time range</label><select id="date"><option value="now 7-d">Past 7 days</option><option value="today 1-m">Past 30 days</option><option value="today 3-m">Past 90 days</option><option value="today 12-m" selected>Past 12 months</option><option value="today 5-y">Past 5 years</option></select></div>
+          <button id="search-button" type="submit">Explore trends <span aria-hidden="true">&rarr;</span></button>
+        </div>
+      </form>
+      <div class="suggestions"><span>Idea research starters</span><button type="button" data-terms="meal prep,healthy snacks">Food &amp; nutrition</button><button type="button" data-terms="guided tours,weekend getaways">Travel &amp; experiences</button><button type="button" data-terms="online courses,language learning">Learning &amp; skills</button></div>
+      <p class="fine-print">A fresh exploration can use two SerpApi search credits: one comparison chart and one related-query lookup. Cached repeats within an hour don't use new credits.</p>
+    </section>
+    <details id="getting-started" class="workspace research-guide" hidden><summary>New to market research? Go from an idea to a practical test.</summary><div class="guide-grid"><article><h3>1. Pick a specific question</h3><p>Choose an audience and need, like busy households looking for convenient food. Compare "meal prep" and "healthy snacks" rather than a broad category like "food."</p></article><article><h3>2. Compare the signals</h3><p>Compare related topics in your target country across 12 months and 5 years. Look for sustained interest, seasonality, and related searches.</p></article><article><h3>3. Generate a hypothesis</h3><p>Ask AI for market insights. Use its audience, search evidence, and validation step to frame one focused idea to test.</p></article><article><h3>4. Validate before committing</h3><p>Interview 5-10 people in your target audience. For a commercial idea, test willingness to pay with a small experiment. Trends alone don't establish demand.</p></article></div></details>
+    <p id="status" role="status" aria-live="polite"></p>
+    <section id="empty-state" class="empty-state" hidden><span class="empty-icon" aria-hidden="true">&#8599;</span><h2>Your next idea starts with a search.</h2><p>Choose a problem above to see real search-interest data.<br>No invented trends. No simulated demand.</p></section>
+    <div id="results" hidden>
+      <section class="workspace chart-section">
+        <div class="section-top"><div><p class="eyebrow">THE DEMAND SIGNAL</p><h2>Interest over time</h2></div><a id="source-link" target="_blank" rel="noopener noreferrer">Open Google Trends &nearr;</a></div>
+        <p class="muted">Relative search interest, 0-100. Not search volume, market size, or purchase intent.</p>
+        <div id="metrics" class="metrics"></div>
+        <div class="chart-wrap"><svg id="chart" viewBox="0 0 960 300" role="img" aria-label="Google Trends relative search interest over time"></svg></div>
+        <div class="chart-dates"><span id="first-date"></span><span id="last-date"></span></div>
+        <p class="fine-print">Change compares the last quarter of complete periods with the first quarter. Partial periods are excluded from metrics.</p>
+        <p id="data-meta" class="fine-print"></p>
+        <details><summary>View accessible data table / download CSV</summary><button id="download" type="button" class="secondary">Download CSV</button><div class="table-wrap"><table id="data-table"></table></div></details>
+      </section>
+      <section class="workspace"><div class="section-top"><h2>Related searches</h2><span id="related-term" class="muted"></span></div><div class="related-grid"><div><h3>Rising queries</h3><div id="rising"></div></div><div><h3>Top queries</h3><div id="top"></div></div></div><p id="warnings" class="fine-print"></p></section>
+      <section class="workspace ai-section"><div class="section-top"><div><p class="eyebrow">FROM INTEREST TO INSIGHT</p><h2>Beyond the obvious.</h2></div><span class="source-badge">Powered by DeepSeek Flash</span></div><p class="muted">Look for less-obvious connections, then test the assumptions behind them.</p><button id="analyze-button" type="button">Explore unexpected ideas &rarr;</button><p class="fine-print">AI uses Trendalyse's DeepSeek account. Your allowance resets at midnight UTC; failed provider requests may count.</p><p id="ai-status" role="status" aria-live="polite"></p><div id="analysis"></div></section>
+    </div>
+    </div>
+    <footer class="dashboard-footer"><span>Evidence first. Hypotheses second.</span><a href="/">Back to Trendalyse home</a></footer>
+  </main>
+</body>
+</html>

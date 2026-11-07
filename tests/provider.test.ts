@@ -14,6 +14,7 @@ describe('isProviderId', () => {
   it('accepts supported providers and rejects others', () => {
     expect(isProviderId('openai')).toBe(true);
     expect(isProviderId('github-models')).toBe(true);
+    expect(isProviderId('deepseek')).toBe(true);
     expect(isProviderId('copilot-internal')).toBe(false);
   });
 });
@@ -59,6 +60,14 @@ describe('discoverCredential', () => {
 });
 
 describe('loadConfig provider selection', () => {
+  it('uses the DeepSeek credential, endpoint and Flash model', () => {
+    const config = loadConfig({ LLM_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: OPENAI_KEY });
+    expect(config.llm.baseUrl).toBe('https://api.deepseek.com');
+    expect(config.llm.models.analysis).toBe('deepseek-flash');
+    expect(config.llm.models.ranking).toBe('deepseek-flash');
+    expect(config.llm.credentialSource).toContain('DEEPSEEK_API_KEY');
+    expect(discoverCredential('deepseek', {}, noRunner)).toBeUndefined();
+  });
   it('defaults to openai', () => {
     const config = loadConfig({ OPENAI_API_KEY: OPENAI_KEY });
     expect(config.llm.provider).toBe('openai');

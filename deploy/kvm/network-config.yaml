@@ -1,0 +1,13 @@
+version: 2
+ethernets:
+  ens3:
+    match:
+      macaddress: "52:54:00:74:61:01"
+    set-name: ens3
+    dhcp4: false
+    addresses: [172.29.245.10/24]
+    routes:
+      - to: default
+        via: 172.29.245.1
+    nameservers:
+      addresses: [1.1.1.1]

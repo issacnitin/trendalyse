@@ -19,7 +19,7 @@ Usage:
 Options:
   -u, --url <url>      Target URL. Repeat for multiple. Prompts interactively if omitted.
   -y, --yes            Never prompt between batches. Required for non-interactive use.
-      --provider <id>  LLM provider: openai (default) or github-models.
+      --provider <id>  LLM provider: openai (default), github-models or deepseek.
       --headless       Force headless browsing (overrides SHOW_BROWSER).
       --headful        Force a visible browser window.
   -h, --help           Show this help.
@@ -27,6 +27,7 @@ Options:
 
 Authentication:
   openai         Set OPENAI_API_KEY.
+  deepseek       Set DEEPSEEK_API_KEY. Defaults to deepseek-flash.
   github-models  Uses your existing GitHub CLI login (\`gh auth login\`), or GITHUB_TOKEN
                  with the "models:read" scope. No OpenAI key required.
 

@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process';
 
-export const PROVIDERS = ['openai', 'github-models'] as const;
+export const PROVIDERS = ['openai', 'github-models', 'deepseek'] as const;
 export type ProviderId = (typeof PROVIDERS)[number];
 
 export interface ProviderModels {
@@ -20,6 +20,18 @@ export interface ProviderSpec {
 }
 
 export const PROVIDER_SPECS: Record<ProviderId, ProviderSpec> = {
+  deepseek: {
+    label: 'DeepSeek',
+    defaultBaseUrl: 'https://api.deepseek.com',
+    defaultModels: {
+      extraction: 'deepseek-flash',
+      analysis: 'deepseek-flash',
+      ideas: 'deepseek-flash',
+      ranking: 'deepseek-flash',
+    },
+    credentialEnvVars: ['DEEPSEEK_API_KEY'],
+    setupHint: 'Set DEEPSEEK_API_KEY on the server. Never put it in browser code.',
+  },
   openai: {
     label: 'OpenAI',
     defaultBaseUrl: 'https://api.openai.com/v1',

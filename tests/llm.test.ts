@@ -5,6 +5,7 @@ import { LlmClient, extractJsonObject } from '../src/llm/client.js';
 import { parseRetryAfter, postJson } from '../src/llm/http.js';
 import { postAnalysis } from '../src/llm/schemas.js';
 import { createLogger, redact } from '../src/logger.js';
+import { analyzeTrends, TrendAnalysisSchema } from '../src/trends/analyze.js';
 
 const API_KEY = `sk-${'a'.repeat(40)}`;
 
@@ -249,5 +250,90 @@ describe('LlmClient', () => {
     expect(body.response_format.type).toBe('json_schema');
     expect(body.response_format.json_schema.strict).toBe(true);
     expect(body.max_completion_tokens).toBe(100);
+  });
+  it('uses DeepSeek JSON mode, max_tokens and disables thinking', async () => {
+    const stub = vi.fn().mockResolvedValue(analysisBody(validAnalysis));
+    vi.stubGlobal('fetch', stub);
+    const config = testConfig({ LLM_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: API_KEY });
+    await new LlmClient(config, silentLogger).complete({ ...request, model: 'deepseek-flash' });
+    const body = JSON.parse(String(stub.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
+    expect(stub.mock.calls[0]?.[0]).toBe('https://api.deepseek.com/chat/completions');
+    expect(body.model).toBe('deepseek-flash');
+    expect(body.max_tokens).toBe(100);
+    expect(body.max_completion_tokens).toBeUndefined();
+    expect(body.thinking).toEqual({ type: 'disabled' });
+    expect(body.response_format).toEqual({ type: 'json_object' });
+    expect(JSON.stringify(body.messages)).toContain('toxicityScore');
+  });
+  it('communicates every Trends analysis bound to DeepSeek JSON mode', async () => {
+    const analysis = { summary: 'Weak search evidence.', caveats: ['Search interest is not purchase intent.'], opportunities: [] };
+    const stub = vi.fn().mockResolvedValue(analysisBody(analysis));
+    vi.stubGlobal('fetch', stub);
+    const config = testConfig({ LLM_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: API_KEY });
+    const result = await analyzeTrends({
+      query: { terms: ['coffee'], geo: '', date: 'today 12-m' },
+      source: 'Google Trends via SerpApi', fetchedAt: '2026-01-01',
+      sourceUrl: 'https://trends.google.com/trends/explore',
+      points: [], metrics: [], related: { rising: [], top: [] }, relatedTerm: 'coffee', warnings: [],
+    }, new LlmClient(config, silentLogger), config, new AbortController().signal);
+    expect(result).toEqual(analysis);
+    const body = JSON.parse(String(stub.mock.calls[0]?.[1]?.body)) as {
+      messages: { content: string }[]; thinking: { type: string }; reasoning_effort: string; max_tokens: number;
+    };
+    expect(body.thinking).toEqual({ type: 'enabled' });
+    expect(body.reasoning_effort).toBe('high');
+    expect(body.max_tokens).toBe(16000);
+    expect(body.messages[0]?.content).toContain('"maxItems":6');
+    expect(body.messages[0]?.content).toContain('"maxLength":700');
+    expect(body.messages[0]?.content).toContain('"maxLength":900');
+    expect(body.messages[0]?.content).toContain('unconventionalAngle');
+    expect(body.messages[0]?.content).toContain('explicit pass/fail threshold');
+    expect(body.messages[0]?.content).toContain('not merely summarize charts');
+    expect(body.messages[0]?.content).toContain('1-6 caveats');
+    expect(body.messages[1]?.content).toContain('GOOGLE_TRENDS');
+  });
+  it('enables requested DeepSeek thinking, omits ignored temperature, and returns only the final answer', async () => {
+    const stub = vi.fn().mockResolvedValue(new Response(JSON.stringify({
+      choices: [{ message: { content: JSON.stringify(validAnalysis), reasoning_content: 'Internal deliberation.' }, finish_reason: 'stop' }],
+    })));
+    vi.stubGlobal('fetch', stub);
+    const config = testConfig({ LLM_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: API_KEY });
+    await expect(new LlmClient(config, silentLogger).complete({
+      ...request, model: 'deepseek-flash', deepseekThinking: 'high', temperature: 0.8,
+    })).resolves.toEqual(validAnalysis);
+    const body = JSON.parse(String(stub.mock.calls[0]?.[1]?.body)) as Record<string, unknown>;
+    expect(body.thinking).toEqual({ type: 'enabled' });
+    expect(body.reasoning_effort).toBe('high');
+    expect(body.temperature).toBeUndefined();
+  });
+  it('does not reuse non-thinking results for thinking requests', async () => {
+    const stub = vi.fn().mockImplementation(() => Promise.resolve(analysisBody(validAnalysis)));
+    vi.stubGlobal('fetch', stub);
+    const config = testConfig({ LLM_PROVIDER: 'deepseek', DEEPSEEK_API_KEY: API_KEY });
+    const client = new LlmClient(config, silentLogger);
+    await client.complete({ ...request, model: 'deepseek-flash' });
+    await client.complete({ ...request, model: 'deepseek-flash', deepseekThinking: 'high' });
+    await client.complete({ ...request, model: 'deepseek-flash', deepseekThinking: 'high' });
+    expect(stub).toHaveBeenCalledTimes(2);
+    expect(client.getUsage().cacheHits).toBe(1);
+  });
+  it('requires a non-obvious angle, an assumption, a risk, and an experiment for every idea', () => {
+    const idea = {
+      title: 'A different delivery model', audience: 'A specific audience',
+      pitch: 'A concrete concept.', evidence: 'A supplied related query.',
+      unconventionalAngle: 'A useful reversal of the obvious approach.',
+      assumption: 'An unverified belief.', risk: 'An alternative explanation.',
+      validation: 'Run a pilot with 20 people; proceed if 5 place a deposit.',
+    };
+    const analysis = { summary: 'Brief context.', caveats: ['Searches are not purchases.'], opportunities: [idea] };
+    expect(TrendAnalysisSchema.safeParse(analysis).success).toBe(true);
+    for (const field of ['unconventionalAngle', 'assumption', 'risk', 'validation']) {
+      const incomplete: Record<string, string> = { ...idea };
+      delete incomplete[field];
+      expect(TrendAnalysisSchema.safeParse({ ...analysis, opportunities: [incomplete] }).success).toBe(false);
+    }
+    expect(TrendAnalysisSchema.safeParse({ ...analysis, summary: 'x'.repeat(701) }).success).toBe(false);
+    expect(TrendAnalysisSchema.safeParse({ ...analysis, opportunities: [{ ...idea, unconventionalAngle: 'x'.repeat(901) }] }).success).toBe(false);
+    expect(TrendAnalysisSchema.safeParse({ ...analysis, inventedMarketSize: 1000 }).success).toBe(false);
   });
 });

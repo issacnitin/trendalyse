@@ -1,0 +1,35 @@
+<filter name="trendalyse-egress" chain="root">
+  <uuid>e889bd24-d90a-42ff-8a37-cd9940c24c19</uuid>
+  <filterref filter="no-mac-spoofing"/>
+  <filterref filter="no-ip-spoofing"/>
+  <filterref filter="no-arp-spoofing"/>
+  <rule action="accept" direction="inout" priority="900"><arp/></rule>
+  <rule action="accept" direction="inout" priority="900"><mac protocolid="ipv4"/></rule>
+  <rule action="accept" direction="in" priority="-800"><tcp srcipaddr="172.29.245.1" dstportstart="22"/></rule>
+  <rule action="accept" direction="out" priority="-800"><tcp dstipaddr="172.29.245.1" srcportstart="22" state="ESTABLISHED"/></rule>
+  <!-- SSH replies must pass both Ethernet/IP filtering and the stateful TCP rule. -->
+  <rule action="accept" direction="out" priority="50"><ip dstipaddr="172.29.245.1" protocol="tcp" srcportstart="22"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="0.0.0.0" dstipmask="8"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="10.0.0.0" dstipmask="8"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="100.64.0.0" dstipmask="10"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="127.0.0.0" dstipmask="8"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="169.254.0.0" dstipmask="16"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="172.16.0.0" dstipmask="12"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="192.168.0.0" dstipmask="16"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="192.0.0.0" dstipmask="24"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="192.0.2.0" dstipmask="24"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="198.18.0.0" dstipmask="15"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="198.51.100.0" dstipmask="24"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="203.0.113.0" dstipmask="24"/></rule>
+  <rule action="drop" direction="out" priority="100"><ip dstipaddr="224.0.0.0" dstipmask="3"/></rule>
+  <rule action="accept" direction="out" priority="-600"><udp dstipaddr="1.1.1.1" dstportstart="53"/></rule>
+  <rule action="accept" direction="in" priority="-600"><udp srcipaddr="1.1.1.1" srcportstart="53" state="ESTABLISHED"/></rule>
+  <rule action="accept" direction="out" priority="-600"><tcp dstipaddr="1.1.1.1" dstportstart="53"/></rule>
+  <rule action="accept" direction="in" priority="-600"><tcp srcipaddr="1.1.1.1" srcportstart="53" state="ESTABLISHED"/></rule>
+  <rule action="accept" direction="out" priority="-500"><tcp dstportstart="443"/></rule>
+  <rule action="accept" direction="in" priority="-500"><tcp srcportstart="443" state="ESTABLISHED"/></rule>
+  <rule action="accept" direction="out" priority="-500"><tcp dstportstart="7844"/></rule>
+  <rule action="accept" direction="in" priority="-500"><tcp srcportstart="7844" state="ESTABLISHED"/></rule>
+  <rule action="drop" direction="inout" priority="1000"><all/></rule>
+  <rule action="drop" direction="inout" priority="1000"><mac/></rule>
+</filter>
